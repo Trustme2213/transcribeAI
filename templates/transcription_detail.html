@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Транскрипция - {{ transcription.filename or 'Аудиофайл' }}</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .transcription-text {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.8;
+            font-size: 1.1rem;
+            background: var(--bs-dark);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--bs-border-color);
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .progress-container {
+            background: var(--bs-dark);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--bs-border-color);
+        }
+        .metadata-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--bs-border-color-translucent);
+        }
+        .metadata-item:last-child {
+            border-bottom: none;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        .transcription-container {
+            position: relative;
+        }
+        .spinner-border-sm {
+            width: 1rem;
+            height: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-arrow-left me-2"></i>
+                Назад к панели
+            </a>
+            <div class="navbar-nav ms-auto d-flex flex-row">
+                <a class="nav-link me-3" href="/admin/settings">
+                    <i class="fas fa-cog"></i> Настройки
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h1 class="h2 mb-2">
+                            <i class="fas fa-file-audio me-2 text-primary"></i>
+                            {{ transcription.filename or 'Аудиофайл' }}
+                        </h1>
+                        <div class="text-muted">
+                            <span><i class="fas fa-calendar me-1"></i>{{ transcription.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                            {% if transcription.duration %}
+                            <span class="ms-3"><i class="fas fa-clock me-1"></i>{{ "%.1f"|format(transcription.duration) }} сек</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="status-indicator">
+                        {% if transcription.status == 'completed' %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-check me-2"></i>Завершено
+                        </span>
+                        {% elif transcription.status == 'processing' %}
+                        <span class="badge bg-warning fs-6">
+                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                            Обработка
+                        </span>
+                        {% elif transcription.status == 'error' %}
+                        <span class="badge bg-danger fs-6">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Ошибка
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary fs-6">
+                            <i class="fas fa-clock me-2"></i>В очереди
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-md-8">
+                <!-- Transcription Text -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-align-left me-2"></i>
+                            Текст транскрипции
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if transcription.status == 'completed' and transcription.text %}
+                        <div class="transcription-container">
+                            <button class="btn btn-outline-secondary btn-sm copy-btn" onclick="copyTranscription()">
+                                <i class="fas fa-copy me-1"></i>
+                                Копировать
+                            </button>
+                            <div class="transcription-text" id="transcriptionText">
+                                {{ transcription.text }}
+                            </div>
+                        </div>
+                        {% elif transcription.status == 'processing' %}
+                        <div class="progress-container text-center">
+                            <div class="spinner-border text-primary mb-3" role="status">
+                                <span class="visually-hidden">Обработка...</span>
+                            </div>
+                            <h5>Транскрипция в процессе</h5>
+                            <p class="text-muted">Пожалуйста, подождите. Это может занять несколько минут в зависимости от длительности аудио.</p>
+                            <div class="progress mt-3">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 75%"></div>
+                            </div>
+                        </div>
+                        {% elif transcription.status == 'error' %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Ошибка обработки</h5>
+                            <p class="mb-0">Произошла ошибка при обработке аудиофайла. Попробуйте загрузить файл снова или обратитесь к администратору.</p>
+                            {% if transcription.error_message %}
+                            <hr>
+                            <small class="text-muted">Детали ошибки: {{ transcription.error_message }}</small>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="progress-container text-center">
+                            <i class="fas fa-clock fa-2x text-muted mb-3"></i>
+                            <h5>В очереди на обработку</h5>
+                            <p class="text-muted">Ваш файл находится в очереди и скоро будет обработан.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                {% if transcription.status == 'completed' and transcription.text %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-download me-2"></i>
+                            Действия
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-primary" onclick="downloadTxt()">
+                                <i class="fas fa-file-text me-2"></i>
+                                Скачать TXT
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadPdf()">
+                                <i class="fas fa-file-pdf me-2"></i>
+                                Скачать PDF
+                            </button>
+                            <button class="btn btn-info" onclick="shareTranscription()">
+                                <i class="fas fa-share me-2"></i>
+                                Поделиться
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <!-- File Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Информация о файле
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="metadata-item">
+                            <span>Имя файла:</span>
+                            <span>{{ transcription.filename or 'Неизвестно' }}</span>
+                        </div>
+                        {% if transcription.file_size %}
+                        <div class="metadata-item">
+                            <span>Размер:</span>
+                            <span>{{ "%.1f"|format(transcription.file_size / 1024 / 1024) }} МБ</span>
+                        </div>
+                        {% endif %}
+                        {% if transcription.duration %}
+                        <div class="metadata-item">
+                            <span>Длительность:</span>
+                            <span>{{ "%.1f"|format(transcription.duration) }} сек</span>
+                        </div>
+                        {% endif %}
+                        <div class="metadata-item">
+                            <span>Статус:</span>
+                            <span>
+                                {% if transcription.status == 'completed' %}
+                                <span class="text-success">Завершено</span>
+                                {% elif transcription.status == 'processing' %}
+                                <span class="text-warning">Обработка</span>
+                                {% elif transcription.status == 'error' %}
+                                <span class="text-danger">Ошибка</span>
+                                {% else %}
+                                <span class="text-secondary">В очереди</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Information -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">
+                            <i class="fas fa-cog me-2"></i>
+                            Параметры обработки
+                        </h6>
+                    </div>
+                    <div class="card-body p-0">
+                        {% if transcription.model_used %}
+                        <div class="metadata-item">
+                            <span>Модель:</span>
+                            <span>{{ transcription.model_used }}</span>
+                        </div>
+                        {% endif %}
+                        {% if transcription.processing_time %}
+                        <div class="metadata-item">
+                            <span>Время обработки:</span>
+                            <span>{{ "%.1f"|format(transcription.processing_time) }} сек</span>
+                        </div>
+                        {% endif %}
+                        {% if transcription.enhancement_used %}
+                        <div class="metadata-item">
+                            <span>Улучшения:</span>
+                            <span>{{ transcription.enhancement_used }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="metadata-item">
+                            <span>Создано:</span>
+                            <span>{{ transcription.created_at.strftime('%H:%M:%S') }}</span>
+                        </div>
+                        {% if transcription.completed_at %}
+                        <div class="metadata-item">
+                            <span>Завершено:</span>
+                            <span>{{ transcription.completed_at.strftime('%H:%M:%S') }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function copyTranscription() {
+            const textElement = document.getElementById('transcriptionText');
+            const text = textElement.textContent;
+            
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success feedback
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check me-1"></i>Скопировано!';
+                btn.classList.remove('btn-outline-secondary');
+                btn.classList.add('btn-success');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Не удалось скопировать текст');
+            });
+        }
+
+        function downloadTxt() {
+            const text = document.getElementById('transcriptionText').textContent;
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'transcription_{{ transcription.id }}.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadPdf() {
+            window.location.href = '/transcription/{{ transcription.id }}/download/pdf';
+        }
+
+        function shareTranscription() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(function() {
+                alert('Ссылка на транскрипцию скопирована в буфер обмена');
+            }).catch(function(err) {
+                prompt('Скопируйте ссылку:', url);
+            });
+        }
+
+        // Auto-refresh for processing transcriptions
+        {% if transcription.status in ['processing', 'pending'] %}
+        setTimeout(() => {
+            window.location.reload();
+        }, 5000);
+        {% endif %}
+    </script>
+</body>
+</html>

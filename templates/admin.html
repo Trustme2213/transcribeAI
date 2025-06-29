@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель Telegram бота</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h1>Админ-панель</h1>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('admin_settings') }}" class="btn btn-outline-primary">Настройки аудио</a>
+                        <a href="/" class="btn btn-secondary">На главную</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Pending auth requests -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Запросы на авторизацию</h3>
+                    </div>
+                    <div class="card-body">
+                        {% if auth_requests %}
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Код</th>
+                                            <th>ID пользователя</th>
+                                            <th>Дата запроса</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for req in auth_requests %}
+                                            <tr>
+                                                <td><code>{{ req.code }}</code></td>
+                                                <td>{{ req.user_id }}</td>
+                                                <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                <td>
+                                                    <div class="btn-group" role="group">
+                                                        <form action="{{ url_for('approve_request', request_id=req.id) }}" method="post">
+                                                            <button type="submit" class="btn btn-success btn-sm me-2">Одобрить</button>
+                                                        </form>
+                                                        <form action="{{ url_for('reject_request', request_id=req.id) }}" method="post">
+                                                            <button type="submit" class="btn btn-danger btn-sm">Отклонить</button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center">Нет активных запросов на авторизацию</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users list -->
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Пользователи</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Имя пользователя</th>
+                                        <th>Статус</th>
+                                        <th>Права администратора</th>
+                                        <th>Дата регистрации</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                        <tr>
+                                            <td>{{ user.user_id }}</td>
+                                            <td>{{ user.username or 'No username' }}{% if user.first_name or user.last_name %} ({{ user.first_name }} {{ user.last_name }}){% endif %}</td>
+                                            <td>
+                                                {% if user.is_authorized %}
+                                                    <span class="badge bg-success">Авторизован</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">Не авторизован</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if user.admin_data %}
+                                                    {% if user.admin_data.is_superadmin %}
+                                                        <span class="badge bg-warning">Суперадмин</span>
+                                                    {% else %}
+                                                        <span class="badge bg-info">Админ</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <span class="badge bg-secondary">Нет</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    {% if user.is_authorized %}
+                                                        <form action="{{ url_for('deauthorize_user', user_id=user.user_id) }}" method="post">
+                                                            <button type="submit" class="btn btn-danger btn-sm me-2">Отозвать доступ</button>
+                                                        </form>
+                                                    {% else %}
+                                                        <form action="{{ url_for('authorize_user', user_id=user.user_id) }}" method="post">
+                                                            <button type="submit" class="btn btn-success btn-sm me-2">Авторизовать</button>
+                                                        </form>
+                                                    {% endif %}
+                                                    
+                                                    {% if is_superadmin and not user.admin_data %}
+                                                        <form action="{{ url_for('make_admin', user_id=user.user_id) }}" method="post">
+                                                            <button type="submit" class="btn btn-primary btn-sm">Сделать админом</button>
+                                                        </form>
+                                                    {% elif is_superadmin and user.admin_data and not user.admin_data.is_superadmin and user.user_id != current_user.user_id %}
+                                                        <form action="{{ url_for('revoke_admin', user_id=user.user_id) }}" method="post">
+                                                            <button type="submit" class="btn btn-warning btn-sm">Отозвать права админа</button>
+                                                        </form>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add Bootstrap 5 JavaScript for dismissable alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var closeButton = alert.querySelector('.btn-close');
+                if (closeButton) {
+                    closeButton.addEventListener('click', function() {
+                        alert.remove();
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

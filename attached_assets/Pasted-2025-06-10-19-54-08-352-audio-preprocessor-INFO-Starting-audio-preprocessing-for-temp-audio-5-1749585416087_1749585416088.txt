@@ -1,0 +1,17 @@
+2025-06-10 19:54:08,352 - audio_preprocessor - INFO - Starting audio preprocessing for: temp_audio/554526841_1749585245.mp3
+2025-06-10 19:54:08,352 - audio_preprocessor - INFO - Preprocessing config: {'enabled': True, 'chunk_size_ms': 180000, 'overlap_ms': 2000, 'noise_reduction': True, 'volume_normalization': True, 'compression': False, 'speech_optimization': True}
+2025-06-10 19:54:08,534 - audio_preprocessor - INFO - Original audio duration: 35.39 seconds
+2025-06-10 19:54:08,534 - audio_preprocessor - INFO - Standardizing audio format
+2025-06-10 19:54:08,553 - audio_preprocessor - INFO - Set sample rate to 16kHz
+2025-06-10 19:54:08,554 - audio_analyzer - INFO - Starting audio analysis for: temp_audio/554526841_1749585245.mp3
+2025-06-10 19:54:22,818 - audio_analyzer - INFO - Calculated optimal parameters: {'noise_reduction_level': 0.4, 'noise_floor_db': -35, 'n_fft': 2048, 'attack_time': 0.002, 'decay_time': 0.05}
+2025-06-10 19:54:22,818 - audio_analyzer - INFO - Based on - Noise level: -49.5dB, Spectral bandwidth: 1965Hz, Dynamic range: 65.5dB
+2025-06-10 19:54:22,819 - audio_analyzer - INFO - Audio analysis completed. Optimal params: {'noise_reduction_level': 0.4, 'noise_floor_db': -35, 'n_fft': 2048, 'attack_time': 0.002, 'decay_time': 0.05}
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO - Intelligent analysis results for 554526841_1749585245.mp3:
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO -   - Noise reduction level: 0.4
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO -   - Noise floor: -35 dB
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO -   - FFT window size: 2048
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO -   - Attack time: 0.002 s
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO -   - Decay time: 0.05 s
+2025-06-10 19:54:22,819 - audio_preprocessor - INFO - Applying noise reduction with params: {'noise_reduction_level': 0.4, 'noise_floor_db': -35, 'n_fft': 2048, 'attack_time': 0.002, 'decay_time': 0.05}
+2025-06-10 19:54:22,820 - audio_preprocessor - WARNING - Error applying noise reduction: 'noise_reduction'

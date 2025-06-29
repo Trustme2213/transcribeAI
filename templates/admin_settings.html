@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки системы - Longaudio Bot</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1>Настройки предобработки аудио</h1>
+                    <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">← Назад к панели администратора</a>
+                </div>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Параметры обработки аудио</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="row">
+                                <!-- General Settings -->
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-3">Основные настройки</h6>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="audio_preprocessing_enabled" 
+                                               name="audio_preprocessing_enabled" 
+                                               {{ 'checked' if settings.audio_preprocessing_enabled else '' }}>
+                                        <label class="form-check-label" for="audio_preprocessing_enabled">
+                                            <strong>Включить предобработку аудио</strong>
+                                        </label>
+                                        <div class="form-text">
+                                            Основной переключатель для включения/отключения всех функций предобработки аудио
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="chunk_size_ms" class="form-label">Размер фрагмента (мс)</label>
+                                        <input type="number" class="form-control" id="chunk_size_ms" name="chunk_size_ms" 
+                                               value="{{ settings.chunk_size_ms }}" min="30000" max="600000" step="1000">
+                                        <div class="form-text">
+                                            Длительность фрагментов при разделении длинных аудиофайлов (по умолчанию: 180000 мс = 3 минуты)
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="overlap_ms" class="form-label">Перекрытие (мс)</label>
+                                        <input type="number" class="form-control" id="overlap_ms" name="overlap_ms" 
+                                               value="{{ settings.overlap_ms }}" min="500" max="10000" step="100">
+                                        <div class="form-text">
+                                            Время перекрытия между соседними фрагментами для лучшего объединения (по умолчанию: 2000 мс = 2 секунды)
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="whisper_model" class="form-label">Модель Whisper</label>
+                                        <select class="form-select" id="whisper_model" name="whisper_model">
+                                            <option value="tiny" {{ 'selected' if settings.whisper_model == 'tiny' else '' }}>Tiny (39 MB) - Быстрая, базовое качество</option>
+                                            <option value="base" {{ 'selected' if settings.whisper_model == 'base' else '' }}>Base (74 MB) - Хорошее качество</option>
+                                            <option value="small" {{ 'selected' if settings.whisper_model == 'small' else '' }}>Small (244 MB) - Улучшенное качество</option>
+                                            <option value="medium" {{ 'selected' if settings.whisper_model == 'medium' else '' }}>Medium (769 MB) - Высокое качество</option>
+                                            <option value="large" {{ 'selected' if settings.whisper_model == 'large' else '' }}>Large (1550 MB) - Максимальное качество</option>
+                                        </select>
+                                        <div class="form-text">
+                                            Выбор модели влияет на качество транскрипции и использование памяти. Medium рекомендуется для большинства случаев.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advanced Processing Settings -->
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-3">Алгоритмы обработки</h6>
+                                    
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="noise_reduction_enabled" 
+                                               name="noise_reduction_enabled" 
+                                               {{ 'checked' if settings.noise_reduction_enabled else '' }}>
+                                        <label class="form-check-label" for="noise_reduction_enabled">
+                                            <strong>Шумоподавление</strong>
+                                        </label>
+                                        <div class="form-text">
+                                            Удаление фонового шума и улучшение четкости речи с помощью FFmpeg фильтров
+                                        </div>
+                                    </div>
+
+                                    <!-- Noise Reduction Parameters -->
+                                    <div class="mb-3">
+                                        <h6 class="text-warning mb-2">Параметры шумоподавления</h6>
+                                        
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <label for="noise_reduction_level" class="form-label">Уровень подавления</label>
+                                                <input type="number" class="form-control" id="noise_reduction_level" name="noise_reduction_level" 
+                                                       value="{{ settings.noise_reduction_level }}" min="0.0" max="1.0" step="0.05">
+                                                <div class="form-text">0.0 - 1.0 (по умолчанию: 0.65)</div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="noise_floor_db" class="form-label">Порог шума (дБ)</label>
+                                                <input type="number" class="form-control" id="noise_floor_db" name="noise_floor_db" 
+                                                       value="{{ settings.noise_floor_db }}" min="-50" max="0" step="1">
+                                                <div class="form-text">-30 до -15 дБ (по умолчанию: -22)</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row mt-2">
+                                            <div class="col-md-4">
+                                                <label for="n_fft" class="form-label">Размер окна FFT</label>
+                                                <select class="form-select" id="n_fft" name="n_fft">
+                                                    <option value="512" {{ 'selected' if settings.n_fft == 512 else '' }}>512</option>
+                                                    <option value="1024" {{ 'selected' if settings.n_fft == 1024 else '' }}>1024</option>
+                                                    <option value="2048" {{ 'selected' if settings.n_fft == 2048 else '' }}>2048</option>
+                                                    <option value="4096" {{ 'selected' if settings.n_fft == 4096 else '' }}>4096</option>
+                                                </select>
+                                                <div class="form-text">Точность анализа</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="attack_time" class="form-label">Время атаки (с)</label>
+                                                <input type="number" class="form-control" id="attack_time" name="attack_time" 
+                                                       value="{{ settings.attack_time }}" min="0.001" max="0.1" step="0.001">
+                                                <div class="form-text">0.001 - 0.1 (по умолчанию: 0.005)</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="decay_time" class="form-label">Время затухания (с)</label>
+                                                <input type="number" class="form-control" id="decay_time" name="decay_time" 
+                                                       value="{{ settings.decay_time }}" min="0.01" max="0.5" step="0.01">
+                                                <div class="form-text">0.01 - 0.5 (по умолчанию: 0.07)</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Intelligent Analysis Toggle -->
+                                    <div class="mb-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="intelligent_analysis_enabled" 
+                                                   name="intelligent_analysis_enabled" 
+                                                   {{ 'checked' if settings.intelligent_analysis_enabled else '' }}>
+                                            <label class="form-check-label" for="intelligent_analysis_enabled">
+                                                <strong>Интеллектуальный анализ</strong>
+                                            </label>
+                                            <div class="form-text">
+                                                Автоматический анализ каждого аудио файла с подбором оптимальных параметров шумоподавления на основе спектрограммы и характеристик шума
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- TurboScribe Enhancement Toggle -->
+                                    <div class="mb-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="use_turboscribe_enhancement" 
+                                                   name="use_turboscribe_enhancement" 
+                                                   {{ 'checked' if settings.use_turboscribe_enhancement else '' }}>
+                                            <label class="form-check-label" for="use_turboscribe_enhancement">
+                                                <strong>TurboScribe-стиль (Максимальное качество)</strong>
+                                            </label>
+                                            <div class="form-text">
+                                                Продвинутая обработка аудио, многоэтапная транскрипция с постобработкой и исправлением ошибок для достижения максимального качества
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Advanced Transcription Toggle -->
+                                    <div class="mb-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" id="use_advanced_transcription" 
+                                                   name="use_advanced_transcription" 
+                                                   {{ 'checked' if settings.use_advanced_transcription else '' }}>
+                                            <label class="form-check-label" for="use_advanced_transcription">
+                                                <strong>Продвинутая транскрипция</strong>
+                                            </label>
+                                            <div class="form-text">
+                                                Использование Faster Whisper для улучшенной скорости и качества (работает если TurboScribe отключен)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="volume_normalization_enabled" 
+                                               name="volume_normalization_enabled" 
+                                               {{ 'checked' if settings.volume_normalization_enabled else '' }}>
+                                        <label class="form-check-label" for="volume_normalization_enabled">
+                                            <strong>Нормализация громкости</strong>
+                                        </label>
+                                        <div class="form-text">
+                                            Автоматическая настройка уровня громкости для оптимального распознавания речи
+                                        </div>
+                                    </div>
+
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="compression_enabled" 
+                                               name="compression_enabled" 
+                                               {{ 'checked' if settings.compression_enabled else '' }}>
+                                        <label class="form-check-label" for="compression_enabled">
+                                            <strong>Динамическое сжатие</strong>
+                                        </label>
+                                        <div class="form-text">
+                                            Выравнивание уровней громкости для улучшения восприятия тихих частей записи
+                                        </div>
+                                    </div>
+
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="speech_optimization_enabled" 
+                                               name="speech_optimization_enabled" 
+                                               {{ 'checked' if settings.speech_optimization_enabled else '' }}>
+                                        <label class="form-check-label" for="speech_optimization_enabled">
+                                            <strong>Оптимизация для речи</strong>
+                                        </label>
+                                        <div class="form-text">
+                                            Удаление длинных пауз и оптимизация для лучшего распознавания речи
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr class="my-4">
+
+                            <!-- Information Panel -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <h6 class="alert-heading">Информация о предобработке аудио</h6>
+                                        <p class="mb-2"><strong>Что делает предобработка:</strong></p>
+                                        <ul class="mb-2">
+                                            <li><strong>Стандартизация формата:</strong> Конвертация в моно, установка частоты дискретизации 16 кГц</li>
+                                            <li><strong>Шумоподавление:</strong> Применение высокочастотных и низкочастотных фильтров</li>
+                                            <li><strong>Нормализация:</strong> Автоматическая настройка уровня громкости</li>
+                                            <li><strong>Компрессия:</strong> Выравнивание динамического диапазона</li>
+                                            <li><strong>Оптимизация речи:</strong> Удаление длинных пауз для экономии времени обработки</li>
+                                        </ul>
+                                        <p class="mb-0">
+                                            <strong>Примечание:</strong> Предобработка может увеличить время обработки аудиофайлов, 
+                                            но значительно улучшает качество транскрипции, особенно для записей низкого качества.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-check-circle"></i> Сохранить настройки
+                                        </button>
+                                        <a href="{{ url_for('admin_panel') }}" class="btn btn-secondary">
+                                            Отмена
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Status Information -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0">Текущий статус системы</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Статус предобработки:</strong> 
+                                    <span class="badge {{ 'bg-success' if settings.audio_preprocessing_enabled else 'bg-secondary' }}">
+                                        {{ 'Включена' if settings.audio_preprocessing_enabled else 'Отключена' }}
+                                    </span>
+                                </p>
+                                <p><strong>Размер фрагмента:</strong> {{ "%.1f"|format(settings.chunk_size_ms / 1000) }} сек</p>
+                                <p><strong>Перекрытие:</strong> {{ "%.1f"|format(settings.overlap_ms / 1000) }} сек</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Активные алгоритмы:</strong></p>
+                                <ul class="list-unstyled">
+                                    <li>
+                                        <span class="badge {{ 'bg-success' if settings.noise_reduction_enabled else 'bg-secondary' }} me-2">
+                                            {{ 'ON' if settings.noise_reduction_enabled else 'OFF' }}
+                                        </span>
+                                        Шумоподавление
+                                    </li>
+                                    <li>
+                                        <span class="badge {{ 'bg-success' if settings.volume_normalization_enabled else 'bg-secondary' }} me-2">
+                                            {{ 'ON' if settings.volume_normalization_enabled else 'OFF' }}
+                                        </span>
+                                        Нормализация громкости
+                                    </li>
+                                    <li>
+                                        <span class="badge {{ 'bg-success' if settings.compression_enabled else 'bg-secondary' }} me-2">
+                                            {{ 'ON' if settings.compression_enabled else 'OFF' }}
+                                        </span>
+                                        Динамическое сжатие
+                                    </li>
+                                    <li>
+                                        <span class="badge {{ 'bg-success' if settings.speech_optimization_enabled else 'bg-secondary' }} me-2">
+                                            {{ 'ON' if settings.speech_optimization_enabled else 'OFF' }}
+                                        </span>
+                                        Оптимизация речи
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Enable/disable processing options based on main toggle
+        document.getElementById('audio_preprocessing_enabled').addEventListener('change', function() {
+            const isEnabled = this.checked;
+            const processingOptions = [
+                'noise_reduction_enabled',
+                'volume_normalization_enabled', 
+                'compression_enabled',
+                'speech_optimization_enabled'
+            ];
+            
+            processingOptions.forEach(function(optionId) {
+                const element = document.getElementById(optionId);
+                element.disabled = !isEnabled;
+                if (!isEnabled) {
+                    element.checked = false;
+                }
+            });
+        });
+
+        // Initialize state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('audio_preprocessing_enabled').dispatchEvent(new Event('change'));
+        });
+    </script>
+</body>
+</html>

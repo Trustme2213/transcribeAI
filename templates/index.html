@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Bot Control Panel</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+</head>
+<body>
+    <div class="container py-4">
+        <div class="row">
+            <div class="col-md-12 text-center mb-4">
+                <h1>Telegram Audio Processing Bot</h1>
+                <p class="lead">Обработка длинных аудиофайлов и транскрипция с помощью Whisper и YandexGPT</p>
+                <div class="mt-3">
+                    <a href="/test-admin" class="btn btn-primary me-2">Тестовая админ-панель</a>
+                    <a href="/admin/settings" class="btn btn-success me-2">Настройки аудио</a>
+                    <a href="/login" class="btn btn-outline-primary">Обычный вход</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Статус системы</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="status-container">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="spinner-border text-primary me-3" role="status"></div>
+                                <span>Загрузка статуса...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Инструкция по использованию</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol class="list-group list-group-numbered">
+                            <li class="list-group-item">Найдите бота в Telegram по имени пользователя, указанному выше</li>
+                            <li class="list-group-item">Отправьте команду /start для начала работы</li>
+                            <li class="list-group-item">Для использования бота необходимо получить авторизацию от администратора</li>
+                            <li class="list-group-item">После авторизации используйте команду /process_audio для загрузки и обработки аудио</li>
+                            <li class="list-group-item">Загрузите аудиофайл в формате MP3</li>
+                            <li class="list-group-item">Дождитесь завершения обработки и ответьте на оставшиеся вопросы</li>
+                            <li class="list-group-item">Получите готовый PDF-отчет</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Возможности бота</h5>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group">
+                            <li class="list-group-item">Обработка длинных аудиофайлов</li>
+                            <li class="list-group-item">Автоматическое разделение на части для эффективной транскрипции</li>
+                            <li class="list-group-item">Транскрипция аудио с помощью Whisper</li>
+                            <li class="list-group-item">Анализ контента с использованием YandexGPT</li>
+                            <li class="list-group-item">Автоматическое заполнение анкеты на основе анализа</li>
+                            <li class="list-group-item">Формирование PDF-отчетов</li>
+                            <li class="list-group-item">Система авторизации пользователей</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch status
+            fetch('/status')
+                .then(response => response.json())
+                .then(data => {
+                    const statusContainer = document.getElementById('status-container');
+                    statusContainer.innerHTML = `
+                        <div class="mb-2">
+                            <strong>Бот в Telegram:</strong> @${data.bot_username}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Статус:</strong> 
+                            <span class="badge bg-success">Онлайн</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Время сервера:</strong> ${data.server_time}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Пользователей:</strong> ${data.users_count || 0}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Авторизованных пользователей:</strong> ${data.authorized_users || 0}
+                        </div>
+                        <div>
+                            <strong>Администраторов:</strong> ${data.admins_count || 0}
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    const statusContainer = document.getElementById('status-container');
+                    statusContainer.innerHTML = `
+                        <div class="alert alert-danger">
+                            Не удалось получить статус бота. Пожалуйста, проверьте, запущен ли сервер.
+                        </div>
+                    `;
+                    console.error('Error fetching status:', error);
+                });
+        });
+    </script>
+</body>
+</html>

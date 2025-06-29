@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в админ-панель</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-form {
+            max-width: 400px;
+            width: 100%;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-form">
+        <div class="card">
+            <div class="card-header text-center">
+                <h2>Вход в админ-панель</h2>
+            </div>
+            <div class="card-body">
+                <!-- Flash messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">Telegram ID:</label>
+                        <input type="text" class="form-control" id="user_id" name="user_id" placeholder="Введите ваш Telegram ID" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="auth_code" class="form-label">Код авторизации:</label>
+                        <input type="password" class="form-control" id="auth_code" name="auth_code" placeholder="Введите ваш код авторизации" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Войти</button>
+                        <a href="/" class="btn btn-secondary">Назад</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add Bootstrap 5 JavaScript for dismissable alerts
+        document.addEventListener('DOMContentLoaded', function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var closeButton = alert.querySelector('.btn-close');
+                if (closeButton) {
+                    closeButton.addEventListener('click', function() {
+                        alert.remove();
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
